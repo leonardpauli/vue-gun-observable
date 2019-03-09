@@ -23,7 +23,7 @@ VueGunObservable.install = (Vue, options)=> {
 
 	// fix other options
 	opt.key = opt.key || '$ds'
-	opt.rootOverride = opt.rootOverride || _ds=> ({})
+	opt.rootOverride = opt.rootOverride || (_ds=> ({}))
 
 
 	// install on prototype
