@@ -1,1 +1,4 @@
-{ "extends": "@leonardpauli/eslint-config" }
+{ "extends": "@leonardpauli/eslint-config", "rules": {
+	"arrow-parens": [0],
+	"arrow-body-style": [0]
+} }
