@@ -1,0 +1,65 @@
+{
+  "name": "vue-gun-observable",
+  "author": "Leonard Pauli <leonardpauli@me.com> (https://leonardpauli.com)",
+  "repository": "github:leonardpauli/vue-gun-observable",
+  "description": "Plugin for Vue.js allowing seamless integration with the gunjs offline-first, realtime, graph-database as central store + sync, hooking right into vuejs's observable system",
+  "version": "0.1.0",
+  "private": false,
+  "license": "MIT or AGPL-3.0-or-later",
+  "keywords": ["vue", "vuejs-plugin", "gundb", "gunjs", "observable", "storage"],
+  "main": "index.js",
+  "scripts": {
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --changedFilesWithAncestor --watch",
+    "test": "jest",
+    "lint": "eslint --fix '{src,__tests__}/**/*.js'",
+    "build:watch": "npm run build -- --watch",
+    "build": "f () { ([ -d lib ] && rm -rf lib); babel src -d lib --copy-files --include-dotfiles --source-maps ${1:---retain-lines --minified}; }; f"
+  },
+  "files": [
+    "lib/",
+    "index.js",
+    "__tests__/"
+  ],
+  "peerDependencies": {
+    "gun": "^0.9.9999991",
+    "vue": "^2.5.22"
+  },
+  "devDependencies": {
+    "gun": "^0.9.9999991",
+    "vue": "^2.5.22",
+    "@babel/cli": "^7.0.0",
+    "@babel/core": "^7.0.0",
+    "@babel/preset-env": "^7.0.0",
+    "@babel/preset-stage-2": "^7.0.0",
+    "babel-preset-minify": "^0.3.0",
+    "@leonardpauli/babel-preset": "^0.1.0",
+    "@leonardpauli/eslint-config": "^0.1.3",
+    "babel-core": "^7.0.0-bridge.0",
+    "babel-eslint": "^8.2.3",
+    "babel-jest": "^22.4.3",
+    "eslint": "^4.19.1",
+    "eslint-plugin-jest": "^21.15.2",
+    "eslint-plugin-vue": "^4.4.0",
+    "jest": "^22.4.3",
+    "lint-staged": "^7.0.4",
+    "onchange": "^3.3.0",
+    "yorkie": "^1.0.3"
+  },
+  "lint-staged": {
+    "{src,examples}/**/*.js": [
+      "npm run lint --"
+    ]
+  },
+  "gitHooks": {
+    "pre-commit": "lint-staged"
+  },
+  "jest": {
+    "verbose": true
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not ie <= 8"
+  ]
+}

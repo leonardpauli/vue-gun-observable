@@ -18,7 +18,7 @@ __⚠️ Note:__ work in progress
 import Gun from 'gun/gun'
 import VueGunObservable from 'vue-gun-observable'
 
-Vue.use(VueGunObservable({
+Vue.use(VueGunObservable, {
 	gun: new Gun({
 		peers: [], // optionally add list of urls for sync, eg. ['https://ex.com/gun', ...]
 	}),
@@ -26,7 +26,7 @@ Vue.use(VueGunObservable({
 	rootOverride: ds=> ({
 		app: ds['myapp_f234'], // makes $ds.app.posts -> $ds.myapp_f234.posts, simplifies namespacing
 	}),
-}))
+})
 ```
 
 ```vue
