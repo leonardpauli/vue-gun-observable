@@ -5,6 +5,29 @@
 __⚠️ Note:__ work in progress
 
 
+- [x] basic vue plugin
+- [x] SimpleGraphStore
+  - [x] data structure, store/retrieve graph data
+  - [x] ObservableAdapter
+  - [x] observability
+  - [x] basic tests (data structure + observability)
+- [ ] Gunjs ObservableAdapter
+  - [ ] basic tests
+- [ ] rootOverride
+- [ ] list api (.$list, .$add, .$remove)
+  - [ ] basic tests
+- [ ] examples
+  - [ ] todo app
+- [ ] minor
+  - [ ] use Symbol.for('$ALL'), Symbol.for('$value') instead of string
+- [ ] npm publish
+- [ ] release, spread the word
+- [ ] Mobx ObservableAdapter
+- [ ] future features
+  - [ ] schema, validation, loading, authorisation, users, ...
+
+
+
 ## Quick Start
 
 ```js
@@ -19,46 +42,94 @@ import Gun from 'gun/gun'
 import VueGunObservable from 'vue-gun-observable'
 
 Vue.use(VueGunObservable, {
-	gun: new Gun({
-		peers: [], // optionally add list of urls for sync, eg. ['https://ex.com/gun', ...]
-	}),
-	key: '$ds', // how to access it from components
-	rootOverride: ds=> ({
-		app: ds['myapp_f234'], // makes $ds.app.posts -> $ds.myapp_f234.posts, simplifies namespacing
-	}),
+  gun: new Gun({
+    peers: [], // optionally add list of urls for sync, eg. ['https://ex.com/gun', ...]
+  }),
+  // or adapter: new SimpleGraphStore/ObservableAdapter({ data: {} })
+  // or adapter: new GunObservableAdapter({gun: new Gun({...}) })
+  key: '$ds', // how to access it from components
+  rootOverride: ds=> ({
+    app: ds['myapp_f234'], // makes $ds.app.posts -> $ds.myapp_f234.posts, simplifies namespacing
+  }),
 })
 ```
 
 ```vue
 // vi src/App.vue or any other vue component
 <template>
-	<div>
-		<h1>{{$ds.app.meta.title}}</h1>
-		<input v-model="$ds.app.meta.title" @keypress.enter="addTitle"/>
-		<ul>
-			<li v-for="item in $ds.app.posts.$list()" :key="item.$id">
-				{{item.title}}
-				<button @click="$ds.app.posts.$remove(item)"> X</button>
-			</li>
-		</ul>
-	</div>
+  <div>
+    <h1>{{$ds.app.meta.title}}</h1>
+    <input v-model="$ds.app.meta.title" @keypress.enter="addTitle"/>
+    <ul>
+      <li v-for="item in $ds.app.posts.$list()" :key="item.$id">
+        {{item.title}}
+        <button @click="$ds.app.posts.$remove(item)"> X</button>
+      </li>
+    </ul>
+  </div>
 </template>
 <script>
 export default {
-	methods: {
-		addTitle () {
-			this.$ds.app.posts.$add({
-				title: $ds.app.meta.title.$value, // explicitly store the current value (vs. .$ref)
-				createdAt: new Date()*1, // gunjs doesn't handle date by default, so convert it to ms using *1 trick
-			})
-		},
-	},
+  methods: {
+    addTitle () {
+      this.$ds.app.posts.$add({
+        title: $ds.app.meta.title.$value, // explicitly store the current value (vs. .$ref)
+        createdAt: new Date()*1, // gunjs doesn't handle date by default, so convert it to ms using *1 trick
+      })
+    },
+  },
 }
 </script>
 ```
 
 Not that much different from just using vue.data? Though with this, you get the features from gundb: persistant storage, and by providing the url to a gunjs peer (eg. via WebRTC for real peer-2-peer, or by setting up a simple server (eg. few clicks with eg. heroku or one line if you have docker ready, see gunjs)): realtime sync, offline first, decentralized, ...
 
+
+## Custom ObservableAdapter
+
+view-model: vm
+
+Vue connects its vm.data to its vm.view using an observable manager. It detects and keeps track on which data was accessed by the view. When the data (dependencies) is later changed, it detects the change and notifies the relevant views (watchers). The views will then re-render (run) with the new data.
+
+This plugin allows us to hook into this observable manager with our own data source. To map your own data source to this plugin, create and use an adapter like below.
+
+It should allow you to hook in anything like redux, mobx, graphql, firebase, gunjs, rest api, or similar, with little to no change in your view code.
+
+see `SimpleGraphStore/ObservableAdapter` for example
+
+```js
+class MyObservableAdapter {
+  constructor (opt) {
+    this.foo = opt.bar
+  }
+
+  // type Ref = any // your own reference, could be a string, object, etc
+  // type ID = any/String
+
+  // retrieve data
+  rootRef() {} // -> Ref
+  keys(ref) {} // -> Array<Key/string> or throw
+  ref(ref, key) {} // -> Ref or throw
+  get(ref) {} // -> value or throw
+
+  // store data
+  set(ref, key, val) {} // -> void or throw
+  setRef(ref, key, refVal) {} // -> void or throw
+  unset(ref, key) {} // -> void or throw, eg. setRef(ref, key, null)
+  
+  // meta
+  id(ref) {} // -> ID or throw
+
+  // observability
+  sub(ref, key, cb) {} // -> unsub() or throw, invoke cb when ref[key] changes
+  tmpMeta(ref) {} // -> object, in-memory object connected to ref, used by external to store eg. their dependencies etc
+
+}
+
+// in main.js
+Vue.use(VueGunObservable, {adapter: new MyObservableAdapter(...), key: '$ds'})
+
+```
 
 
 ## Limitations
@@ -74,6 +145,7 @@ Anyhow, this solution makes it very easy and quick to add a persitant + realtime
 
 ```js
 // primitive_value is (null, bool, num, or str)
+// refNode is the storage reference, eg. gunjs node for gunjs store
 
 $ds // root node
 node // a proxied value with some meta data and helpers
@@ -95,13 +167,13 @@ node.$value = primitive_value
 // if internal_value is null or primitive, change it
 // if internal_value is object, set internal_value.$value
 // setting a previous object-value to primitive is not permitted with the current gunjs p2p implementation, thus the use of .$value
-// 	(a possible solution would be to keep track on both object and primitive value separately, to not break the merging when switching between node->str->node)
+//  (a possible solution would be to keep track on both object and primitive value separately, to not break the merging when switching between node->str->node)
 // (for consistency, primitive values should possibly only be allowed under .$value, though this would lead to memory overhead + incompability with existing gunjs databases with its current implementation)
 
 // $value, setter, object value
 node.$value = otherNode
 // if value is of type node, set to otherNode.$value
-node.$value = gunjsNode or other_object // throw error, only primitive allowed, use node = gunjsNode instead
+node.$value = refNode or other_object // throw error, only primitive allowed, use node = refNode instead
 node.$value = otherNode.$valueRef // not implemented
 
 
@@ -110,7 +182,7 @@ parent.node = primitive_value
 
 // node, setter, object value
 parent.node = otherNode // parent.node -> otherNode
-parent.node = gunjsNode // parent.node -> node for gunjsNode
+parent.node = refNode // parent.node -> node for refNode
 parent.node = other_object // extend parent.node
 // if parent.node is primitive_value: parent.node -> new node {$value: primitive_value}, + extend as below
 // if parent.node is object_value: extend parent.node with other_object (+ normalized using gunjs)
@@ -121,8 +193,8 @@ parent.node = otherNode.$valueRef // not implemented
 node.$id // the UUID/gunjs "soul" for the node
 
 
-// gun
-node.$gun // get the gunjs node for the node, eg. node.$gun.put(...)
+// ref
+node.$ref // get the storage reference // eg. for gunjs: the gunjs node for the node, eg. node.$gun.put(...)
 
 
 // list

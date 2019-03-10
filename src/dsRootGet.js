@@ -6,6 +6,9 @@
 //
 
 
+import {subscribe} from './subscribing'
+
+
 class VueGunObservableNode {
 	static Symbol = Symbol('VueGunObservableNode')
 	static [Symbol.hasInstance] (instance) {
@@ -21,15 +24,20 @@ export const Node = VueGunObservableNode
 
 const getId = (ctx)=> ctx.adapter.id(ctx.ref)
 
-const getPrimitive = (ctx)=> ctx.adapter.get(ctx.ref)
-const getString = (ctx, key)=> String(getPrimitive(ctx, key))
+const getPrimitive = (ctx)=> {
+	subscribe(ctx, '$value')
+	return ctx.adapter.get(ctx.ref)
+}
+const getString = (ctx)=> String(getPrimitive(ctx))
 const getNested = (ctx, key)=> {
 	// console.log(`"${String(key)}" was gotten`)
+	subscribe(ctx, key)
 	const innerRef = ctx.adapter.ref(ctx.ref, key)
 	return getProxy(ctx, innerRef)
 }
 
 const getValueKeys = (ctx)=> {
+	subscribe(ctx, null)
 	return ctx.adapter.keys(ctx.ref)
 }
 
@@ -111,7 +119,7 @@ const set = (ctx, key, val)=> {
 // unsetter, delete node[key]
 const deleteProperty = (ctx, key)=> {
 	// console.log(`"${key}" delete / set to null`)
-	ctx.adapter.unset(ctx.ref, key)
+	ctx.adapter.unsetRef(ctx.ref, key)
 }
 
 // subfields

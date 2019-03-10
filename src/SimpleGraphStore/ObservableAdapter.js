@@ -16,12 +16,20 @@ export default class ObservableAdapter {
 
 		this.store = opt.store
 	}
+	
 	rootRef () { return this.store.rootRef() }
 	keys (ref) { return this.store.keys(ref) }
 	ref (ref, key) { return this.store.ref(ref, key) }
 	get (ref) { return this.store.get(ref) }
+	
 	set (ref, key, val) { return this.store.set(ref, key, val) }
 	setRef (ref, key, refVal) { return this.store.setRef(ref, key, refVal) }
-	unset (ref, key) { return this.store.set(ref, key, null) }
+	unsetRef (ref, key) { return this.store.setRef(ref, key, null) }
+	
 	id (ref) { return this.store.id(ref) }
+
+	sub (ref, key, cb) { return this.store.sub(ref, key, cb) }
+
+	// in-memory object connected to ref
+	tmpMeta (ref) { return this.store.tmpMeta(ref) }
 }
